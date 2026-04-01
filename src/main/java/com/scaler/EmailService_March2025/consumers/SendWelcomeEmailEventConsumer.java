@@ -4,9 +4,9 @@ import com.scaler.EmailService_March2025.dtos.SendEmailDto;
 import com.scaler.EmailService_March2025.utils.EmailUtil;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Properties;
 
 import javax.mail.Authenticator;
@@ -24,10 +24,13 @@ public class SendWelcomeEmailEventConsumer {
     @KafkaListener(topics = "sendWelcomeEmail",groupId = "emailServiceGroup")
     public void handleSendWelcomeEmailEvent(String message){
 
-        SendEmailDto emailDto=objectMapper.readValue(
-                message,
-                SendEmailDto.class
-        );
+        SendEmailDto emailDto;
+        try {
+            emailDto = objectMapper.readValue(message, SendEmailDto.class);
+        } catch (JsonProcessingException e) {
+            System.err.println("[EmailConsumer] Failed to deserialise message: " + e.getMessage());
+            return;   // skip this message, don't crash the consumer
+        }
 
         String toEmail =emailDto.getEmail();
         String subject=emailDto.getSubject();
